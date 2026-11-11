@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/*
+ * AFTER CL TO MOON brand tokens.
+ * midnight / cream / butter are sampled from the official logo file
+ * (background #0C1620, lettering #F4E7CF, moon #EDC360).
+ */
+@theme {
+  --color-midnight: #0c1620;
+  --color-midnight-800: #142131;
+  --color-midnight-700: #22344a;
+  --color-midnight-500: #51627a;
+
+  --color-plywood: #e6d5b5;
+  --color-plywood-200: #efe3cc;
+  --color-plywood-400: #d6c19c;
+  --color-plywood-600: #a88d64;
+
+  --color-ivory: #fbf5e8;
+  --color-cream: #f4e7cf;
+
+  --color-butter: #edc360;
+  --color-butter-200: #f6e1a6;
+
+  --color-orange: #c9773f;
+  --color-brown: #6f4626;
+
+  --color-ink: #0c1620;
+  --color-ink-soft: #46505c;
+}
+
+@theme inline {
+  --font-sans: var(--font-noto-kr), system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;
+  --font-display: var(--font-big-shoulders), var(--font-noto-kr), sans-serif;
+  --font-label: var(--font-jost), var(--font-noto-kr), sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", monospace;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: 1rem;
+  }
+
+  body {
+    background-color: var(--color-plywood);
+    color: var(--color-ink);
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+
+  ::selection {
+    background: var(--color-butter);
+    color: var(--color-midnight);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-orange);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Fine print grain, like a risograph poster. Static tile, no blend modes. */
+  .paper {
+    background-color: var(--color-plywood);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .32 0 0 0 0 .22 0 0 0 0 .1 .55 0 0 0 -.26'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .night {
+    background-color: var(--color-midnight);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .96 0 0 0 0 .9 0 0 0 0 .8 .3 0 0 0 -.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /*
+   * Fades only the outer few percent of the logo file (its plain background
+   * margin) into the page, so no rectangle edge shows. The artwork is untouched.
+   */
+  .logo-blend {
+    /* The file's near-black background never paints darker than the page; the light artwork is unaffected. */
+    mix-blend-mode: lighten;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent),
+      linear-gradient(to bottom, transparent, #000 4%, #000 96%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent),
+      linear-gradient(to bottom, transparent, #000 4%, #000 96%, transparent);
+    mask-composite: intersect;
+  }
+
+  /* Event sign-up window: dashed rule, distinct from the solid enrollment bar. */
+  .dash-orange {
+    background-image: repeating-linear-gradient(
+      90deg,
+      var(--color-orange) 0 7px,
+      transparent 7px 11px
+    );
+  }
+}

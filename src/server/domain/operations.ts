@@ -574,6 +574,97 @@ export function planProposalReview(
 }
 
 // ---------------------------------------------------------------------------
+// Operator: club money (Ledger)
+// ---------------------------------------------------------------------------
+
+export interface LedgerInput {
+  date: string;
+  category: string;
+  description: string;
+  amount: number;
+  person: string;
+  method: string;
+  receiptUrl: string;
+  memo: string;
+}
+
+const LEDGER_FIELDS = ["date", "category", "description", "amount", "person", "method", "receipt_url", "memo", "status"];
+
+function ledgerRow(input: LedgerInput): Row {
+  return {
+    date: input.date,
+    category: input.category,
+    description: input.description,
+    amount: input.amount,
+    person: input.person,
+    method: input.method,
+    receipt_url: input.receiptUrl,
+    memo: input.memo,
+  };
+}
+
+export function planLedgerAdd(_data: Tables, ctx: Ctx & { input: LedgerInput }): Planned {
+  const commitId = newId("C", ctx.now, 8);
+  const entryId = newId("LG", ctx.now);
+  const nowIso = seoulIso(ctx.now);
+  const row: Row = {
+    entry_id: entryId,
+    ...ledgerRow(ctx.input),
+    status: "active",
+    created_by: ctx.actorId,
+    created_at: nowIso,
+    updated_at: nowIso,
+  };
+  return {
+    commit: {
+      id: commitId,
+      checks: [],
+      ops: [{ type: "append", table: "Ledger", row }, audit(ctx, commitId, "ledger.add", entryId, null, row)],
+    },
+    result: { entryId },
+  };
+}
+
+export function planLedgerEdit(data: Tables, ctx: Ctx & { entryId: string; input: LedgerInput; reason: string }): Planned {
+  const row = (data.Ledger ?? []).find((r) => cellText(r.entry_id) === ctx.entryId);
+  if (!row) return { refuse: "장부 기록을 찾을 수 없어요." };
+  if (cellText(row.status) === "void") return { refuse: "무효 처리된 기록은 고칠 수 없어요." };
+  if (!ctx.reason.trim()) return { refuse: "수정 사유를 적어 주세요." };
+  const commitId = newId("C", ctx.now, 8);
+  const set: Row = { ...ledgerRow(ctx.input), updated_at: seoulIso(ctx.now) };
+  return {
+    commit: {
+      id: commitId,
+      checks: [{ type: "exists", table: "Ledger", id: ctx.entryId, fields: pickText(row, LEDGER_FIELDS) }],
+      ops: [
+        { type: "update", table: "Ledger", id: ctx.entryId, set },
+        audit(ctx, commitId, "ledger.edit", ctx.entryId, pickText(row, LEDGER_FIELDS), { ...set, reason: ctx.reason }),
+      ],
+    },
+  };
+}
+
+/** Entries are never deleted; a voided entry stays in the sheet and the audit log. */
+export function planLedgerVoid(data: Tables, ctx: Ctx & { entryId: string; reason: string }): Planned {
+  const row = (data.Ledger ?? []).find((r) => cellText(r.entry_id) === ctx.entryId);
+  if (!row) return { refuse: "장부 기록을 찾을 수 없어요." };
+  if (cellText(row.status) === "void") return { refuse: "이미 무효 처리된 기록이에요." };
+  if (!ctx.reason.trim()) return { refuse: "무효 처리 사유를 적어 주세요." };
+  const commitId = newId("C", ctx.now, 8);
+  const memo = [cellText(row.memo), `무효: ${ctx.reason}`].filter(Boolean).join(" / ");
+  return {
+    commit: {
+      id: commitId,
+      checks: [{ type: "exists", table: "Ledger", id: ctx.entryId, fields: { status: cellText(row.status) } }],
+      ops: [
+        { type: "update", table: "Ledger", id: ctx.entryId, set: { status: "void", memo, updated_at: seoulIso(ctx.now) } },
+        audit(ctx, commitId, "ledger.void", ctx.entryId, pickText(row, LEDGER_FIELDS), { status: "void", reason: ctx.reason }),
+      ],
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Member: notification settings and devices
 // ---------------------------------------------------------------------------
 
@@ -676,6 +767,7 @@ export const NEEDS = {
   member: ["Members"],
   proposals: ["Proposals"],
   proposalSubmit: ["Members", "Notifications"],
+  ledger: ["Ledger"],
   prefs: ["NotificationPrefs"],
   subscriptions: ["PushSubscriptions"],
   notifications: ["Notifications"],

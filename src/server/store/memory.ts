@@ -81,6 +81,22 @@ export function demoTables(now = Date.now()): Tables {
     note: "",
   });
 
+  const ledger = (id: string, date: string, category: string, description: string, amount: number, person = "", method = "모임통장"): Row => ({
+    entry_id: id,
+    date,
+    category,
+    description,
+    amount,
+    person,
+    method,
+    receipt_url: "",
+    memo: "",
+    status: "active",
+    created_by: "M-DEMO-ADMIN",
+    created_at: `${date}T20:00:00+09:00`,
+    updated_at: `${date}T20:00:00+09:00`,
+  });
+
   // Jimin's 1-month membership ends in ~5 days (inside the D-7 window); Hyunwoo is mid-way
   // through 14 months; Taeo's ended about 40 days ago.
   const jiminStart = day(-25);
@@ -151,6 +167,20 @@ export function demoTables(now = Date.now()): Tables {
     NotificationPrefs: [],
     EventWatch: [],
     AuditLog: [],
+    // Fictional bookkeeping (the demo is public; never real names or amounts here).
+    Ledger: [
+      ...["크루 A", "크루 B", "크루 C", "크루 D"].map((person, i) => ledger(`LG-DEMO-IN${i}`, day(-40), "출자금", "초기 출자", 3_000_000, person)),
+      ledger("LG-DEMO-1", day(-38), "보증금", "아지트 보증금", 10_000_000),
+      ledger("LG-DEMO-2", day(-36), "수수료", "중개수수료", 500_000),
+      ledger("LG-DEMO-3", day(-35), "임대료·관리비", "월세 + 관리비", 480_000),
+      ledger("LG-DEMO-4", day(-30), "시설·공사", "벽 설치", 1_200_000),
+      ledger("LG-DEMO-5", day(-28), "운송", "용달", 40_000),
+      ledger("LG-DEMO-6", day(-20), "장비·용품", "매트", 900_000, "크루 B", "개인 결제"),
+      ledger("LG-DEMO-7", day(-15), "소모품", "청소용품", 23_400),
+      ledger("LG-DEMO-8", day(-5), "임대료·관리비", "월세 + 관리비", 480_000),
+      ledger("LG-DEMO-9", day(-3), "일일 이용료", "게스트 일일 이용 2명", 20_000),
+      ledger("LG-DEMO-10", day(-2), "식음료", "생수", 12_000),
+    ],
     Settings: [
       { key: "bank_name", value: "카카오뱅크 모임통장", description: "입금 안내에 표시" },
       { key: "account_number", value: "3333-00-0000000", description: "입금 계좌번호 (예시)" },

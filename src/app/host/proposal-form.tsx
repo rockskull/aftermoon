@@ -47,7 +47,7 @@ function ProposalFormRound({ onAnother }: { onAnother: () => void }) {
         </p>
         {state.dryRun && (
           <p className="mt-4 rounded-md border border-dashed border-brown/50 px-3 py-2 text-[13px] text-brown">
-            데모 모드: 시트 대신 서버 메모리에 저장했어요. 운영진 화면의 제안 목록에서 확인할 수 있어요.
+            데모 모드라 운영진에게 실제로 전달되지는 않았어요(연락처는 저장하지 않았어요). 급한 제안은 운영진에게 직접 알려 주세요.
           </p>
         )}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">

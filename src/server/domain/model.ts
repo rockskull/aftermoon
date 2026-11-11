@@ -1,5 +1,6 @@
 import { CONSENT_DEFAULTS, consentUrl, type ConsentLinks } from "@/lib/consent";
 import { parseMoment, toDateKey } from "@/lib/dates";
+import { kindOf, type MoneyEntry } from "@/lib/ledger";
 import type { MembershipPeriod, MembershipRecordStatus } from "@/lib/membership";
 import { cellText, type Cell, type Row, type Tables } from "../store/schema";
 
@@ -248,6 +249,29 @@ export function toSubscription(r: Row): PushSubscriptionRecord {
     status: oneOf(r.status, ["active", "revoked", "expired"] as const, "active"),
     failureCount: num(r.failure_count),
     raw: r,
+  };
+}
+
+/** A Ledger row as a money entry; rows with an unknown category or no amount are skipped. */
+export function toLedgerEntry(r: Row): MoneyEntry | null {
+  const category = text(r.category);
+  const kind = kindOf(category);
+  const amount = Math.abs(num(r.amount));
+  const date = dayKey(r.date);
+  if (!text(r.entry_id) || !kind || !amount || !date) return null;
+  return {
+    id: text(r.entry_id),
+    date,
+    kind,
+    category,
+    description: text(r.description),
+    amount,
+    person: text(r.person),
+    method: text(r.method),
+    receiptUrl: text(r.receipt_url),
+    memo: text(r.memo),
+    source: "ledger",
+    voided: text(r.status).toLowerCase() === "void",
   };
 }
 

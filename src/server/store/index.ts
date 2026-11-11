@@ -11,13 +11,15 @@ export type StoreMode = "sheets" | "demo" | "unconfigured";
 
 /**
  * - sheets:       CLUB_API_URL + CLUB_API_SECRET → the real spreadsheet via Apps Script
- * - demo:         local development, or DEMO_MODE=true on a preview → in-memory demo data
- * - unconfigured: production without the sheet → member features show "준비 중"
+ * - demo:         no sheet connected yet → in-memory demo data with demo logins
+ *                 (member and admin screens can be tried; nothing real is stored)
+ * - unconfigured: DEMO_MODE=false without a sheet → member features show "준비 중"
+ * Connecting the sheet switches demo off automatically.
  */
 export function storeMode(): StoreMode {
   if (process.env.CLUB_API_URL && process.env.CLUB_API_SECRET) return "sheets";
-  if (process.env.NODE_ENV !== "production" || process.env.DEMO_MODE === "true") return "demo";
-  return "unconfigured";
+  if (process.env.DEMO_MODE === "false") return "unconfigured";
+  return "demo";
 }
 
 export class StoreUnavailableError extends Error {

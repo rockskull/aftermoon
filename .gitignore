@@ -47,3 +47,6 @@ next-env.d.ts
 
 # IDE settings
 .idea/
+
+# private data exports (real names / amounts) - never commit
+/private/

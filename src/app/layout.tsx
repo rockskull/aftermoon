@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Big_Shoulders, IBM_Plex_Mono, Jost, Noto_Sans_KR } from "next/font/google";
 import { ServiceWorkerRegister } from "@/components/sw-register";
+import { storeMode } from "@/server/store";
 import "./globals.css";
 
 // Korean glyphs are served in unicode-range slices; only the Latin slice is preloaded.
@@ -76,9 +77,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${notoKr.variable} ${bigShoulders.variable} ${jost.variable} ${plexMono.variable} antialiased`}
     >
       <body className="flex min-h-dvh flex-col bg-midnight font-sans pt-[env(safe-area-inset-top)]">
-        {process.env.DEMO_MODE === "true" && (
+        {/* Only while demo data is in use: once the sheet is connected the banner disappears. */}
+        {storeMode() === "demo" && (
           <p className="bg-butter px-4 py-1.5 text-center text-[12px] font-semibold text-midnight">
-            데모 모드 · 실제 시트가 아닌 예시 데이터예요. 변경 내용은 저장되지 않을 수 있어요.
+            데모 모드 · 예시 데이터로 운영 중이에요. 로그인에서 데모 계정(운영진 포함)을 골라 둘러볼 수 있어요.
           </p>
         )}
         <div className="flex flex-1 flex-col bg-plywood">{children}</div>

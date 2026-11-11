@@ -3,7 +3,16 @@ import { applyCommit, type Commit } from "../store/commit";
 import { MemoryStore } from "../store/memory";
 import type { Row, Tables } from "../store/schema";
 import { parsePrivate } from "./model";
-import { planApplication, planApproval, planCancelApproval, planMemberConsent, planMembershipEdit } from "./operations";
+import {
+  planApplication,
+  planApproval,
+  planCancelApproval,
+  planLedgerAdd,
+  planLedgerEdit,
+  planLedgerVoid,
+  planMemberConsent,
+  planMembershipEdit,
+} from "./operations";
 
 const NOW = Date.parse("2026-11-11T12:00:00+09:00");
 
@@ -218,6 +227,42 @@ describe("application", () => {
     if (!("commit" in ext)) throw new Error("expected a commit");
     expect(ext.result).toMatchObject({ amount: 80000, joiningFee: 0 });
     expect(planMemberConsent(t, { now: NOW, actorId: "OLD", memberId: "OLD" })).toEqual({ refuse: "이미 제출을 확인했어요." });
+  });
+});
+
+describe("ledger", () => {
+  const input = { date: "2026-11-10", category: "소모품", description: "테이프", amount: 16950, person: "", method: "모임통장", receiptUrl: "", memo: "" };
+  const commit = (p: ReturnType<typeof planLedgerAdd>) => {
+    if (!("commit" in p)) throw new Error("refused" in p ? p.refuse : "noop");
+    return p.commit;
+  };
+
+  it("adds, edits with a reason, and voids without deleting — all audited", () => {
+    const t = baseTables();
+    t.Ledger = [];
+    const add = planLedgerAdd(t, { now: NOW, actorId: "OP", input });
+    expect(applyCommit(t, commit(add))).toEqual({ ok: true });
+    const id = String(t.Ledger[0].entry_id);
+
+    expect(planLedgerEdit(t, { now: NOW, actorId: "OP", entryId: id, input, reason: " " })).toEqual({ refuse: "수정 사유를 적어 주세요." });
+    expect(applyCommit(t, commit(planLedgerEdit(t, { now: NOW, actorId: "OP", entryId: id, input: { ...input, amount: 15950 }, reason: "영수증 확인" })))).toEqual({ ok: true });
+    expect(t.Ledger[0].amount).toBe(15950);
+
+    expect(applyCommit(t, commit(planLedgerVoid(t, { now: NOW, actorId: "OP", entryId: id, reason: "중복" })))).toEqual({ ok: true });
+    expect(t.Ledger).toHaveLength(1);
+    expect(t.Ledger[0]).toMatchObject({ status: "void", memo: "무효: 중복" });
+    expect(planLedgerEdit(t, { now: NOW, actorId: "OP", entryId: id, input, reason: "x" })).toEqual({ refuse: "무효 처리된 기록은 고칠 수 없어요." });
+    expect(t.AuditLog!.map((r) => r.action)).toEqual(["ledger.add", "ledger.edit", "ledger.void"]);
+  });
+
+  it("an edit planned from stale data is rejected under the lock", () => {
+    const t = baseTables();
+    t.Ledger = [];
+    applyCommit(t, commit(planLedgerAdd(t, { now: NOW, actorId: "OP", input })));
+    const id = String(t.Ledger[0].entry_id);
+    const stale = commit(planLedgerEdit(t, { now: NOW, actorId: "OP", entryId: id, input: { ...input, amount: 1 }, reason: "a" }));
+    applyCommit(t, commit(planLedgerEdit(t, { now: NOW, actorId: "OP", entryId: id, input: { ...input, amount: 2 }, reason: "b" })));
+    expect(applyCommit(t, stale)).toMatchObject({ ok: false, error: "conflict" });
   });
 });
 

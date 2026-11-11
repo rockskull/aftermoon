@@ -43,9 +43,14 @@ export async function submitProposal(_prev: ProposalFormState, formData: FormDat
     return { status: "error", message: "지금은 제안을 받을 수 없어요. 운영진에게 직접 알려 주세요.", values: echo(formData) };
   }
 
+  // The public demo lets anyone sign in as a demo operator, so a real visitor's
+  // contact details must never be kept there.
+  const payload: Record<string, string | number> =
+    storeMode() === "demo" ? { ...parsed.data, contact: "(데모 모드: 저장하지 않음)" } : { ...parsed.data };
+
   try {
     const outcome = await runCommit(NEEDS.proposalSubmit, (data) =>
-      planProposal(data, { now: Date.now(), actorId: "visitor", payload: { ...parsed.data } }),
+      planProposal(data, { now: Date.now(), actorId: "visitor", payload }),
     );
     if (!outcome.ok) throw new Error(outcome.message);
     updateTag(PRIVATE_TAG);

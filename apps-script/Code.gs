@@ -35,6 +35,8 @@ var TABLES = {
     'created_at', 'last_success_at', 'failure_count'],
   NotificationPrefs: ['member_id', 'membership', 'events', 'operator', 'updated_at'],
   EventWatch: ['event_id', 'fingerprint', 'status', 'first_seen_at', 'updated_at'],
+  Ledger: ['entry_id', 'date', 'category', 'description', 'amount', 'person', 'method', 'receipt_url', 'memo',
+    'status', 'created_by', 'created_at', 'updated_at'],
   AuditLog: ['log_id', 'commit_id', 'actor_id', 'action', 'target_id', 'before_value', 'after_value', 'created_at'],
   Settings: ['key', 'value', 'description'],
 };
@@ -243,6 +245,10 @@ function setupSheets() {
   dropdown_(ss, 'Members', 'status', ['applicant', 'active', 'inactive']);
   dropdown_(ss, 'Payments', 'status', ['pending', 'matched', 'approved', 'rejected', 'refunded']);
   dropdown_(ss, 'Memberships', 'status', ['active', 'canceled', 'refunded']);
+  dropdown_(ss, 'Ledger', 'category', ['임대료·관리비', '보증금', '시설·공사', '장비·용품', '소모품', '운송', '보험', '수수료',
+    '식음료', '기타 지출', '출자금', '일일 이용료', '이벤트 참가비', '기타 수입']);
+  dropdown_(ss, 'Ledger', 'method', ['모임통장', '개인 결제', '현금', '기타']);
+  dropdown_(ss, 'Ledger', 'status', ['active', 'void']);
 
   var plans = ss.getSheetByName('Plans');
   if (plans.getLastRow() < 2) {

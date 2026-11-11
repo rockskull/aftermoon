@@ -1,6 +1,7 @@
 import "server-only";
 import { jwtVerify, SignJWT, type JWTPayload } from "jose";
 import { cookies } from "next/headers";
+import { storeMode } from "../store";
 
 /**
  * Session = a signed JWT in an httpOnly cookie. It only says *who* signed in
@@ -26,10 +27,12 @@ export const OAUTH_COOKIE = secure ? "__Host-acm_oauth" : "acm_oauth";
 function secretKey(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
   if (secret && secret.length >= 32) return new TextEncoder().encode(secret);
-  if (process.env.NODE_ENV === "production") {
+  // Demo sessions only ever reach in-memory sample data, so a built-in key is acceptable there.
+  // With the real sheet connected, a proper AUTH_SECRET is mandatory.
+  if (process.env.NODE_ENV === "production" && storeMode() !== "demo") {
     throw new Error("AUTH_SECRET (32+ characters) must be set in production.");
   }
-  return new TextEncoder().encode("dev-only-after-moon-session-secret-change-me");
+  return new TextEncoder().encode("demo-only-after-moon-session-secret-not-for-real-data");
 }
 
 export async function signToken(payload: JWTPayload, maxAgeSeconds: number): Promise<string> {

@@ -7,15 +7,20 @@ import { deliverDue } from "@/server/notify";
 import { operatorForAction } from "@/server/auth/viewer";
 import { matchDeposits, parseBankFile, type DepositMatch } from "@/server/domain/bank";
 import { parsePrivate, type Membership, type Role } from "@/server/domain/model";
+import { AUTO_INCOME_CATEGORIES, kindOf, METHODS } from "@/lib/ledger";
 import {
   NEEDS,
   planApproval,
   planCancelApproval,
+  planLedgerAdd,
+  planLedgerEdit,
+  planLedgerVoid,
   planMemberEdit,
   planMembershipEdit,
   planProposalReview,
   planRefund,
   planRejection,
+  type LedgerInput,
 } from "@/server/domain/operations";
 import { PRIVATE_TAG, readTables, runCommit } from "@/server/store";
 
@@ -159,6 +164,77 @@ export async function reviewProposal(_prev: AdminState, fd: FormData): Promise<A
     }),
   );
   return outcome.ok ? done("저장했어요.") : { status: "error", message: outcome.message };
+}
+
+// ---------------------------------------------------------------------------
+// Club money (Ledger)
+// ---------------------------------------------------------------------------
+
+const MAX_AMOUNT = 1_000_000_000;
+
+function parseLedgerInput(fd: FormData): { ok: true; input: LedgerInput } | { ok: false; message: string } {
+  const date = field(fd, "date");
+  const category = field(fd, "category");
+  const description = field(fd, "description").slice(0, 200);
+  const amount = Number(field(fd, "amount").replace(/[,\s원]/g, ""));
+  const receiptUrl = field(fd, "receipt_url");
+  if (!isDay(date)) return { ok: false, message: "날짜를 확인해 주세요." };
+  if (!kindOf(category) || (AUTO_INCOME_CATEGORIES as readonly string[]).includes(category)) {
+    return { ok: false, message: "항목을 골라 주세요." };
+  }
+  if (!description) return { ok: false, message: "내용을 적어 주세요." };
+  if (!Number.isInteger(amount) || amount <= 0 || amount > MAX_AMOUNT) return { ok: false, message: "금액은 1원 이상의 숫자로 적어 주세요." };
+  if (receiptUrl && !/^https:\/\//i.test(receiptUrl)) return { ok: false, message: "영수증 링크는 https:// 로 시작해야 해요." };
+  return {
+    ok: true,
+    input: {
+      date,
+      category,
+      description,
+      amount,
+      person: field(fd, "person").slice(0, 40),
+      method: (METHODS as readonly string[]).includes(field(fd, "method")) ? field(fd, "method") : "모임통장",
+      receiptUrl: receiptUrl.slice(0, 500),
+      memo: field(fd, "memo").slice(0, 300),
+    },
+  };
+}
+
+export async function addLedgerEntry(_prev: AdminState, fd: FormData): Promise<AdminState> {
+  const op = await operatorForAction();
+  if (!op) return DENIED;
+  const parsed = parseLedgerInput(fd);
+  if (!parsed.ok) return { status: "error", message: parsed.message };
+  const outcome = await runCommit(NEEDS.ledger, (data) => planLedgerAdd(data, { now: Date.now(), actorId: op.member.id, input: parsed.input }));
+  if (!outcome.ok) return { status: "error", message: outcome.message };
+  const sign = kindOf(parsed.input.category) === "income" ? "+" : "−";
+  return done(`기록했어요. ${parsed.input.description} ${sign}${parsed.input.amount.toLocaleString("ko-KR")}원`);
+}
+
+export async function editLedgerEntry(_prev: AdminState, fd: FormData): Promise<AdminState> {
+  const op = await operatorForAction();
+  if (!op) return DENIED;
+  const parsed = parseLedgerInput(fd);
+  if (!parsed.ok) return { status: "error", message: parsed.message };
+  const outcome = await runCommit(NEEDS.ledger, (data) =>
+    planLedgerEdit(data, {
+      now: Date.now(),
+      actorId: op.member.id,
+      entryId: field(fd, "entry_id"),
+      input: parsed.input,
+      reason: field(fd, "reason"),
+    }),
+  );
+  return outcome.ok ? done("장부를 고쳤어요.") : { status: "error", message: outcome.message };
+}
+
+export async function voidLedgerEntry(_prev: AdminState, fd: FormData): Promise<AdminState> {
+  const op = await operatorForAction();
+  if (!op) return DENIED;
+  const outcome = await runCommit(NEEDS.ledger, (data) =>
+    planLedgerVoid(data, { now: Date.now(), actorId: op.member.id, entryId: field(fd, "entry_id"), reason: field(fd, "reason") }),
+  );
+  return outcome.ok ? done("무효 처리했어요. 기록은 시트와 변경 이력에 남아요.") : { status: "error", message: outcome.message };
 }
 
 export interface BankState {

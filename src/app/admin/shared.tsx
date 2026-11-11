@@ -3,12 +3,13 @@ import type { ReactNode } from "react";
 import { cn } from "@/components/ui";
 import { AdminToasts } from "./admin-ui";
 
-export type AdminTab = "overview" | "payments" | "members" | "bank" | "proposals";
+export type AdminTab = "overview" | "payments" | "members" | "money" | "bank" | "proposals";
 
 const TABS: Array<{ key: AdminTab; href: string; label: string }> = [
   { key: "overview", href: "/admin", label: "현황" },
   { key: "payments", href: "/admin/payments", label: "입금 확인" },
   { key: "members", href: "/admin/members", label: "회원" },
+  { key: "money", href: "/admin/money", label: "회계" },
   { key: "bank", href: "/admin/bank", label: "거래내역" },
   { key: "proposals", href: "/admin/proposals", label: "제안·이벤트" },
 ];

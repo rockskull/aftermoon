@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SiteFooter, SiteHeader } from "@/components/site";
+import { storeMode } from "@/server/store";
 import { ProposalForm } from "./proposal-form";
 
 export const metadata: Metadata = {
@@ -50,6 +51,11 @@ export default function HostPage() {
 
         <section className="paper">
           <div className="mx-auto max-w-3xl px-4 py-12 md:px-6 md:py-16">
+            {storeMode() === "demo" && (
+              <p className="mb-8 rounded-md border-2 border-dashed border-brown/60 bg-ivory px-4 py-3 text-[14px] leading-relaxed text-brown">
+                지금은 데모 기간이라 이 제안서는 운영진에게 전달되지 않아요. 실제 제안은 운영진에게 직접 알려 주세요.
+              </p>
+            )}
             <ProposalForm />
           </div>
         </section>

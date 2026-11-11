@@ -75,6 +75,22 @@ export const TABLES = {
   ],
   NotificationPrefs: ["member_id", "membership", "events", "operator", "updated_at"],
   EventWatch: ["event_id", "fingerprint", "status", "first_seen_at", "updated_at"],
+  /** Club money: everything except membership deposits (those come from Payments). */
+  Ledger: [
+    "entry_id",
+    "date",
+    "category",
+    "description",
+    "amount",
+    "person",
+    "method",
+    "receipt_url",
+    "memo",
+    "status",
+    "created_by",
+    "created_at",
+    "updated_at",
+  ],
   AuditLog: ["log_id", "commit_id", "actor_id", "action", "target_id", "before_value", "after_value", "created_at"],
   Settings: ["key", "value", "description"],
   // v0.1 tables (read by the public feed / written by the proposal form)
